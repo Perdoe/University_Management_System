@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .action-button, .back-button {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .action-button:hover, .back-button:hover {
+            background: #45a049;
+        }
+        .back-button {
+            background: #f44336;
+            margin-top: 20px;
+        }
+        .back-button:hover {
+            background: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Dashboard</h1>
+        <div class="action-buttons">
+            <a href="#" class="action-button">Add/Drop Classes</a>
+            <a href="#" class="action-button">Current Academic Status</a>
+            <a href="#" class="action-button">Academic Overview</a>
+            <a href="#" class="action-button">View Schedule</a>
+            <a href="#" class="action-button">Financial Aid Information</a>
+            <a href="#" class="action-button">Contact Advisor</a>
+        </div>
+        <a href="/signin" class="back-button">Back to Sign In</a>
+    </div>
+</body>
+</html>
