@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Course Search</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Course Search</h2>
+
+        <div class="search-container">
+            <input type="text" id="courseSearch" placeholder="Search courses...">
+            <button onclick="searchCourses()">Search</button>
+        </div>
+
+        <div id="searchResults">
+            <!-- Results will be displayed here -->
+        </div>
+
+        <script>
+        function searchCourses() {
+            const query = document.getElementById('courseSearch').value;
+            fetch(`/search/courses?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('searchResults');
+                    resultsDiv.innerHTML = '';
+
+                    data.forEach(course => {
+                        resultsDiv.innerHTML += `
+                            <div class="course-item">
+                                <h3>${course.prefix} ${course.number}</h3>
+                                <p>Credits: ${course.credits}</p>
+                                <p>Semester: ${course.semester} ${course.year}</p>
+                                <p>Instructor: ${course.instructor_id}</p>
+                            </div>
+                        `;
+                    });
+                });
+        }
+        </script>
+    </div>
+</body>
+</html>

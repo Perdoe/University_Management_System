@@ -29,9 +29,9 @@
             color: #333;
         }
         .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-rows: auto auto;
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 20px;
         }
@@ -56,20 +56,206 @@
         .back-button:hover {
             background: #d32f2f;
         }
+        /* Styles for GPA and Transcript displays */
+        #gpaDisplay, #transcriptDisplay {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .grade-row {
+            display: flex;
+            justify-content: space-between;
+            max-width: 400px;
+            margin: 10px auto;
+            font-size: 16px;
+            padding: 5px 0;
+        }
+        .course-name {
+            text-align: left;
+            flex-grow: 1;
+        }
+        .grade-value {
+            text-align: right;
+            min-width: 50px;
+        }
+        .gpa-total {
+            margin-top: 20px;
+            font-weight: bold;
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .semester-header {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+            text-align: left;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .current-courses {
+            display: none;
+            margin-top: 20px;
+        }
+        .course-table {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        .course-table th, .course-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .course-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .course-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
     </style>
+    <script>
+        function showGPA() {
+            hideAllDisplays();
+            const gpaDisplay = document.getElementById('gpaDisplay');
+            gpaDisplay.style.display = 'block';
+        }
+
+        function showTranscript() {
+            hideAllDisplays();
+            const transcriptDisplay = document.getElementById('transcriptDisplay');
+            transcriptDisplay.style.display = 'block';
+        }
+
+        function showCurrentCourses() {
+            hideAllDisplays();
+            const currentCourses = document.getElementById('currentCourses');
+            currentCourses.style.display = 'block';
+        }
+
+        function hideAllDisplays() {
+            document.getElementById('gpaDisplay').style.display = 'none';
+            document.getElementById('transcriptDisplay').style.display = 'none';
+            document.getElementById('currentCourses').style.display = 'none';
+        }
+
+        function calculateGPA(grades) {
+            const gradePoints = {
+                'A': 4.0,
+                'B': 3.0,
+                'C': 2.0,
+                'D': 1.0,
+                'F': 0.0
+            };
+            let totalPoints = 0;
+            let totalCourses = 0;
+
+            grades.forEach(grade => {
+                if (grade in gradePoints) {
+                    totalPoints += gradePoints[grade];
+                    totalCourses++;
+                }
+            });
+
+            return totalCourses > 0 ? (totalPoints / totalCourses).toFixed(2) : '0.00';
+        }
+    </script>
 </head>
 <body>
     <div class="container">
         <h1>Student Dashboard</h1>
+        <h2>Welcome, {{ current_user.username }}</h2>
+
         <div class="action-buttons">
-            <a href="#" class="action-button">Add/Drop Classes</a>
-            <a href="#" class="action-button">Current Academic Status</a>
+            <a href="#" class="action-button" onclick="showCurrentCourses()">Current Courses</a>
             <a href="#" class="action-button">Academic Overview</a>
+            <a href="#" class="action-button" onclick="showTranscript()">Transcript</a>
             <a href="#" class="action-button">View Schedule</a>
-            <a href="#" class="action-button">Financial Aid Information</a>
+            <a href="#" class="action-button" onclick="showGPA()">Semester GPA</a>
             <a href="#" class="action-button">Contact Advisor</a>
         </div>
-        <a href="/signin" class="back-button">Back to Sign In</a>
+
+        <!-- Current GPA Display -->
+        <div id="gpaDisplay">
+            <h2>Current Semester Grades</h2>
+            {% for course in courses %}
+                {% if course.grade != 'IP' %}
+                <div class="grade-row">
+                    <span class="course-name">{{ course.course_prefix }} {{ course.course_number }}</span>
+                    <span class="grade-value">{{ course.grade }}</span>
+                </div>
+                {% endif %}
+            {% endfor %}
+            <div class="gpa-total">
+                Current GPA: {{ gpa }}
+            </div>
+        </div>
+
+        <!-- Transcript Display -->
+        <div id="transcriptDisplay">
+            <h2>Complete Transcript</h2>
+            {% for year in ['2024', '2023', '2022'] %}
+                {% for semester in ['Spring', 'Fall'] %}
+                    {% set semester_courses = [] %}
+                    {% for course in courses %}
+                        {% if course.year_taken == year and
+                              ((semester == 'Spring' and course.semester == 'S') or
+                               (semester == 'Fall' and course.semester == 'F')) %}
+                            {% set _ = semester_courses.append(course) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if semester_courses %}
+                        <div class="semester-header">
+                            {{ semester }} {{ year }}
+                        </div>
+                        {% for course in semester_courses %}
+                            <div class="grade-row">
+                                <span class="course-name">{{ course.course_prefix }} {{ course.course_number }}</span>
+                                <span class="grade-value">{{ course.grade }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+            <div class="gpa-total">
+                Cumulative GPA: {{ gpa }}
+            </div>
+        </div>
+
+        <!-- Current Courses Display -->
+        <div id="currentCourses">
+            <h2>Current Courses</h2>
+            <table class="course-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Semester</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                        {% if course.grade == 'IP' %}
+                        <tr>
+                            <td>{{ course.course_prefix }} {{ course.course_number }}</td>
+                            <td>{{ course.semester }} {{ course.year_taken }}</td>
+                            <td>In Progress</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <a href="{{ url_for('signin') }}" class="back-button">Back to Sign In</a>
     </div>
 </body>
 </html>

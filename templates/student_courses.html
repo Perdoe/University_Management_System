@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Courses</title>
+</head>
+<body>
+    <div class="container">
+        <h2>My Courses</h2>
+
+        <div class="courses-list">
+            {% for course in courses %}
+            <div class="course-item">
+                <h3>{{ course.course_prefix }} {{ course.course_number }}</h3>
+                <p>Semester: {{ course.semester }} {{ course.year_taken }}</p>
+                <p>Grade: {{ course.grade }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
