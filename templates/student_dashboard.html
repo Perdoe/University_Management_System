@@ -98,6 +98,7 @@
             border-bottom: 1px solid #ccc;
             padding-bottom: 5px;
         }
+
         .current-courses {
             display: none;
             margin-top: 20px;
@@ -120,16 +121,49 @@
         .course-table tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+
     </style>
     <script>
         function showGPA() {
             hideAllDisplays();
+
             const gpaDisplay = document.getElementById('gpaDisplay');
             gpaDisplay.style.display = 'block';
+
+            const grades = [
+                { course: "Calculus III", grade: 4 },
+                { course: "Computer Organization", grade: 3 },
+                { course: "Physics II", grade: 4 },
+                { course: "Music Theory", grade: 3 }
+            ];
+
+            const gpaDisplay = document.getElementById('gpaDisplay');
+            gpaDisplay.style.display = 'block';
+            gpaDisplay.innerHTML = ''; // Clear previous content
+
+            // Display each grade
+            grades.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'grade-row';
+                row.innerHTML = `
+                    <span class="course-name">${item.course}</span>
+                    <span class="grade-value">${item.grade}</span>
+                `;
+                gpaDisplay.appendChild(row);
+            });
+
+            // Calculate and display average
+            const average = grades.reduce((sum, item) => sum + item.grade, 0) / grades.length;
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'gpa-total';
+            totalDiv.innerHTML = `Semester GPA: ${average.toFixed(2)}`;
+            gpaDisplay.appendChild(totalDiv);
+
         }
 
         function showTranscript() {
             hideAllDisplays();
+
             const transcriptDisplay = document.getElementById('transcriptDisplay');
             transcriptDisplay.style.display = 'block';
         }
@@ -138,11 +172,87 @@
             hideAllDisplays();
             const currentCourses = document.getElementById('currentCourses');
             currentCourses.style.display = 'block';
+
+            const transcript = {
+                'Senior Year - Spring 2024': [
+                    { course: "Software Engineering", grade: 4 },
+                    { course: "Computer Networks", grade: 3 },
+                    { course: "Technical Writing", grade: 4 },
+                    { course: "Web Development", grade: 4 },
+                    { course: "Ethics in Computing", grade: 3 }
+                ],
+                'Senior Year - Fall 2023': [
+                    { course: "Operating Systems", grade: 4 },
+                    { course: "Database Systems", grade: 4 },
+                    { course: "Artificial Intelligence", grade: 3 },
+                    { course: "Senior Project I", grade: 4 },
+                    { course: "Professional Development", grade: 4 }
+                ],
+                'Junior Year - Spring 2023': [
+                    { course: "Data Structures", grade: 3 },
+                    { course: "Computer Architecture", grade: 4 },
+                    { course: "Algorithm Analysis", grade: 3 },
+                    { course: "Programming Languages", grade: 4 },
+                    { course: "Digital Design", grade: 4 }
+                ],
+                'Junior Year - Fall 2022': [
+                    { course: "Calculus III", grade: 4 },
+                    { course: "Computer Organization", grade: 3 },
+                    { course: "Physics II", grade: 4 },
+                    { course: "Music Theory", grade: 3 },
+                    { course: "Discrete Mathematics", grade: 4 }
+                ],
+                'Sophomore Year - Spring 2022': [
+                    { course: "Calculus II", grade: 3 },
+                    { course: "Introduction to Programming", grade: 4 },
+                    { course: "Physics I", grade: 4 },
+                    { course: "English Composition", grade: 3 },
+                    { course: "Psychology 101", grade: 4 }
+                ]
+            };
+
+            const transcriptDisplay = document.getElementById('transcriptDisplay');
+            transcriptDisplay.style.display = 'block';
+            transcriptDisplay.innerHTML = ''; // Clear previous content
+
+            let totalGradePoints = 0;
+            let totalCourses = 0;
+
+            // Display each semester
+            for (const [semester, courses] of Object.entries(transcript)) {
+                // Add semester header
+                const semesterHeader = document.createElement('div');
+                semesterHeader.className = 'semester-header';
+                semesterHeader.textContent = semester;
+                transcriptDisplay.appendChild(semesterHeader);
+
+                // Display courses for this semester
+                courses.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'grade-row';
+                    row.innerHTML = `
+                        <span class="course-name">${item.course}</span>
+                        <span class="grade-value">${item.grade}</span>
+                    `;
+                    transcriptDisplay.appendChild(row);
+                    totalGradePoints += item.grade;
+                    totalCourses++;
+                });
+            }
+
+            // Calculate and display cumulative GPA
+            const cumulativeGPA = totalGradePoints / totalCourses;
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'gpa-total';
+            totalDiv.innerHTML = `Cumulative GPA: ${cumulativeGPA.toFixed(2)}`;
+            transcriptDisplay.appendChild(totalDiv);
+
         }
 
         function hideAllDisplays() {
             document.getElementById('gpaDisplay').style.display = 'none';
             document.getElementById('transcriptDisplay').style.display = 'none';
+
             document.getElementById('currentCourses').style.display = 'none';
         }
 
@@ -165,6 +275,7 @@
             });
 
             return totalCourses > 0 ? (totalPoints / totalCourses).toFixed(2) : '0.00';
+
         }
     </script>
 </head>
@@ -174,7 +285,11 @@
         <h2>Welcome, {{ current_user.username }}</h2>
 
         <div class="action-buttons">
+
             <a href="#" class="action-button" onclick="showCurrentCourses()">Current Courses</a>
+
+            <a href="#" class="action-button">Add/Drop Classes</a>
+
             <a href="#" class="action-button">Academic Overview</a>
             <a href="#" class="action-button" onclick="showTranscript()">Transcript</a>
             <a href="#" class="action-button">View Schedule</a>
@@ -256,6 +371,11 @@
         </div>
 
         <a href="{{ url_for('signin') }}" class="back-button">Back to Sign In</a>
+
+        <div id="gpaDisplay"></div>
+        <div id="transcriptDisplay"></div>
+        <a href="/signin" class="back-button">Back to Sign In</a>
+
     </div>
 </body>
 </html>
