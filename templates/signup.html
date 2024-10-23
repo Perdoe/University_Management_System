@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up - University Management System</title>
+    <style>
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-control {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .btn-login {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-login:hover {
+            background-color: #0056b3;
+        }
+        #message {
+            color: #dc3545;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .hint {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Sign Up</h2>
+
+        <form method="POST" action="{{ url_for('signup') }}" class="login-form">
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Username" required class="form-control">
+                <div class="hint">
+                    Format: S12345 (Student), T12345 (Teacher), A12345 (Advisor), ST12345 (Staff)
+                </div>
+            </div>
+
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Email" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Password" required class="form-control">
+            </div>
+
+            <button type="submit" class="btn-login">Sign Up</button>
+            <div id="message"></div>
+        </form>
+    </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch('/signup', {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success === false) {
+                    document.getElementById('message').textContent = data.message;
+                } else {
+                    window.location.href = '/signin';
+                }
+            })
+            .catch(error => {
+                document.getElementById('message').textContent = 'An error occurred. Please try again.';
+            });
+        });
+    </script>
+</body>
+</html>

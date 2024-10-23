@@ -56,6 +56,57 @@
         .back-button:hover {
             background: #d32f2f;
         }
+
+        #rosterDisplay, #scheduleDisplay, #gradeManagement, #courseSelection {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .grade-row {
+            display: flex;
+            justify-content: space-between;
+            max-width: 400px;
+            margin: 10px auto;
+            font-size: 16px;
+            padding: 5px 0;
+        }
+        .course-name {
+            text-align: left;
+            flex-grow: 1;
+        }
+        .grade-value {
+            text-align: right;
+            min-width: 50px;
+        }
+        .semester-header {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+            text-align: left;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .course-table {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        .course-table th, .course-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .course-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .course-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+
         /* Roster Display Styles */
         #rosterDisplay {
             display: none;
@@ -123,6 +174,7 @@
         }
         .grade-table tr:hover {
             background-color: #f5f5f5;
+
         }
         .edit-grade {
             background: #2196F3;
@@ -139,13 +191,35 @@
     <script>
         function hideAllDisplays() {
             document.getElementById('rosterDisplay').style.display = 'none';
+
+            document.getElementById('scheduleDisplay').style.display = 'none';
+            document.getElementById('gradeManagement').style.display = 'none';
+            document.getElementById('courseSelection').style.display = 'none';
+
             document.getElementById('courseSelection').style.display = 'none';
             document.getElementById('gradeManagement').style.display = 'none';
+
         }
 
         function showRoster() {
             hideAllDisplays();
+
+            const rosterDisplay = document.getElementById('rosterDisplay');
+            rosterDisplay.style.display = 'block';
+
+            // Show all course rosters when viewing full roster
+            const courseElements = document.querySelectorAll('[data-course]');
+            courseElements.forEach(element => {
+                element.style.display = 'block';
+            });
+        }
+
+        function showSchedule() {
+            hideAllDisplays();
+            document.getElementById('scheduleDisplay').style.display = 'block';
+
             document.getElementById('rosterDisplay').style.display = 'block';
+
         }
 
         function showCourseSelection() {
@@ -154,6 +228,49 @@
         }
 
         function showGradeManagement(course) {
+
+            hideAllDisplays();
+            document.getElementById('rosterDisplay').style.display = 'block';
+
+            // Hide all course rosters first
+            const courseElements = document.querySelectorAll('[data-course]');
+            courseElements.forEach(element => {
+                element.style.display = 'none';
+            });
+
+            // Show only the selected course's roster
+            const selectedCourse = document.querySelector(`[data-course="${course}"]`);
+            if (selectedCourse) {
+                selectedCourse.style.display = 'block';
+            }
+        }
+
+        function editGrade(studentId, coursePrefix, courseNumber) {
+            const currentGrade = document.querySelector(`tr[data-student="${studentId}"] .grade-value`).textContent;
+            const newGrade = prompt("Enter new grade (A, B, C, D, or F):", currentGrade);
+
+            if (newGrade && ['A', 'B', 'C', 'D', 'F'].includes(newGrade.toUpperCase())) {
+                fetch('/update_grade', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `student_id=${studentId}&course_prefix=${coursePrefix}&course_number=${courseNumber}&grade=${newGrade.toUpperCase()}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the grade in the table without reloading
+                        document.querySelector(`tr[data-student="${studentId}"] .grade-value`).textContent = newGrade.toUpperCase();
+                    } else {
+                        alert('Failed to update grade');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to update grade');
+                });
+
             document.getElementById('courseSelection').style.display = 'none';
             document.getElementById('gradeManagement').style.display = 'block';
             document.getElementById('selectedCourseTitle').textContent = course;
@@ -222,6 +339,7 @@
                 if (gradeCell && !isNaN(newGrade) && newGrade !== "") {
                     gradeCell.textContent = newGrade;
                 }
+
             }
         }
     </script>
@@ -229,14 +347,37 @@
 <body>
     <div class="container">
         <h1>Teacher Dashboard</h1>
+        <h2>Welcome, {{ current_user.username }}</h2>
+
         <div class="action-buttons">
             <a href="#" class="action-button" onclick="showRoster()">View Class Roster</a>
             <a href="#" class="action-button" onclick="showCourseSelection()">Manage Grades</a>
             <a href="#" class="action-button">Create Assignments</a>
             <a href="#" class="action-button">Schedule Office Hours</a>
-            <a href="#" class="action-button">View Teaching Schedule</a>
+            <a href="#" class="action-button" onclick="showSchedule()">View Schedule</a>
             <a href="#" class="action-button">Contact Department</a>
         </div>
+
+
+        <!-- Teaching Schedule Display -->
+        <div id="scheduleDisplay">
+            <h2>Teaching Schedule</h2>
+            <table class="course-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Credits</th>
+                        <th>Semester</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>{{ course.course_prefix }} {{ course.course_number }}</td>
+                        <td>{{ course.credits }}</td>
+                        <td>{{ course.semester }} {{ course.year_taught }}</td>
+                    </tr>
+                    {% endfor %}
 
         <!-- Course Selection for Grade Management -->
         <div id="courseSelection">
@@ -258,9 +399,57 @@
                     </tr>
                 </thead>
                 <tbody>
+
                 </tbody>
             </table>
         </div>
+
+
+        <!-- Course Selection for Grade Management -->
+        <div id="courseSelection">
+            <h2>Select Course to Manage Grades</h2>
+            <div class="action-buttons">
+                {% for course in courses %}
+                <a href="#" class="action-button" onclick="showGradeManagement('{{ course.course_prefix }} {{ course.course_number }}')">
+                    {{ course.course_prefix }} {{ course.course_number }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Roster Display -->
+        <div id="rosterDisplay">
+            <h2>Class Rosters</h2>
+            {% for course_name, students in course_rosters.items() %}
+            <div data-course="{{ course_name }}">
+                <div class="semester-header">{{ course_name }}</div>
+                <table class="course-table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Grade</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr data-student="{{ student.student_id }}">
+                            <td>{{ student.student_id }}</td>
+                            <td class="grade-value">{{ student.grade }}</td>
+                            <td>
+                                <button class="edit-grade" onclick="editGrade('{{ student.student_id }}', '{{ course_name.split()[0] }}', '{{ course_name.split()[1] }}')">
+                                    Edit Grade
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+
+        <a href="{{ url_for('signin') }}" class="back-button">Back to Sign In</a>
 
         <!-- Original Roster Display -->
         <div id="rosterDisplay">
@@ -268,6 +457,7 @@
         </div>
 
         <a href="/signin" class="back-button">Back to Sign In</a>
+
     </div>
 </body>
 </html>
