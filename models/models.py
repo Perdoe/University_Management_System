@@ -59,9 +59,11 @@ class InstructorCourse(db.Model):
     instructor_id = db.Column(db.String(10))
     course_prefix = db.Column(db.String(10))
     course_number = db.Column(db.String(10))
-    credits = db.Column(db.String(5))  # Changed from Integer to String
+    credits = db.Column(db.String(5))
     semester = db.Column(db.String(5))
     year_taught = db.Column(db.String(10))
+    time = db.Column(db.String(50))        # New field
+    location = db.Column(db.String(50))    # New field
 
 class StudentCourse(db.Model):
     __tablename__ = 'student_courses'
