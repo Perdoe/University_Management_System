@@ -179,28 +179,91 @@ def student_dashboard():
     if current_user.user_type != 'student':
         return redirect(url_for('index'))
 
-    # Get student's courses and GPA
-    student = Student.query.filter_by(student_id=current_user.username).first()
+    # Get student's information
+    # Remove the .first() to see if we get any results at all
+    student = Student.query.filter_by(student_id=current_user.username.replace('S', '')).first()
+
     if student:
+        # Add debug print
+        print(f"Found student: {student.student_id}")
+
+        # Get all courses for this student
         courses = StudentCourse.query.filter_by(student_id=student.student_id).all()
 
-        # Calculate GPA
-        grade_points = {'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0}
-        total_points = 0
-        total_courses = 0
-
+        # Debug print courses
+        print(f"Found {len(courses)} courses for student")
         for course in courses:
-            if course.grade in grade_points:
-                total_points += grade_points[course.grade]
-                total_courses += 1
+            print(
+                f"Course: {course.course_prefix} {course.course_number} - {course.semester} {course.year_taken} - Grade: {course.grade}")
 
-        gpa = round(total_points / total_courses, 2) if total_courses > 0 else 0.0
+        # Calculate GPAs and credits
+        grade_points = {'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0}
+        current_year = '2024'
+        current_semester = 'S'
+
+        # Separate current courses
+        current_courses = [
+            course for course in courses
+            if course.year_taken == current_year and course.semester == current_semester
+        ]
+
+        # Calculate semester GPA
+        semester_points = sum(grade_points.get(c.grade, 0) for c in current_courses if c.grade in grade_points)
+        semester_count = sum(1 for c in current_courses if c.grade in grade_points)
+        semester_gpa = round(semester_points / max(semester_count, 1), 2)
+
+        # Calculate cumulative GPA
+        total_points = sum(grade_points.get(c.grade, 0) for c in courses if c.grade in grade_points)
+        total_count = sum(1 for c in courses if c.grade in grade_points)
+        cumulative_gpa = round(total_points / max(total_count, 1), 2)
+
+        # Calculate credits
+        completed_credits = sum(3 for c in courses if c.grade in grade_points)  # Assuming 3 credits per course
+        current_credits = sum(3 for c in current_courses if c.grade == 'IP')
+
+        # Get department and advisor info
+        department = Department.query.filter_by(department_id=student.major).first()
+        advisor_phone = department.advisor_phone if department else 'Not Available'
+        advisor_email = f"{department.advisor_id}@university.edu" if department else 'Not Available'
+
+        # Debug print final data
+        print(f"Semester GPA: {semester_gpa}")
+        print(f"Cumulative GPA: {cumulative_gpa}")
+        print(f"Completed Credits: {completed_credits}")
+        print(f"Current Credits: {current_credits}")
 
         return render_template('student_dashboard.html',
+                               current_user=current_user,
                                courses=courses,
-                               gpa=gpa,
-                               student=student)
-    return render_template('student_dashboard.html')
+                               gpa=semester_gpa,
+                               cumulative_gpa=cumulative_gpa,
+                               completed_credits=completed_credits,
+                               current_credits=current_credits,
+                               student=student,
+                               advisor_phone=advisor_phone,
+                               advisor_email=advisor_email)
+    else:
+        print(f"No student found for username: {current_user.username}")
+    return render_template('student_dashboard.html', current_user=current_user)
+
+# Add the debug route here
+@app.route('/debug/student_data/<student_id>')
+def debug_student_data(student_id):
+    student = Student.query.filter_by(student_id=student_id).first()
+    if student:
+        courses = StudentCourse.query.filter_by(student_id=student.student_id).all()
+        return jsonify({
+            'student_found': True,
+            'student_id': student.student_id,
+            'courses': [{
+                'prefix': c.course_prefix,
+                'number': c.course_number,
+                'semester': c.semester,
+                'year': c.year_taken,
+                'grade': c.grade
+            } for c in courses]
+        })
+    return jsonify({'student_found': False})
 
 
 @app.route('/teacher_dashboard')
@@ -209,12 +272,13 @@ def teacher_dashboard():
     if current_user.user_type != 'teacher':
         return redirect(url_for('index'))
 
-    # Get teacher's courses and students
     teacher = Teacher.query.filter_by(instructor_id=current_user.username).first()
+
     if teacher:
+        # Get teacher's courses
         courses = InstructorCourse.query.filter_by(instructor_id=teacher.instructor_id).all()
 
-        # Get students for each course
+        # Get class rosters for each course
         course_rosters = {}
         for course in courses:
             students = StudentCourse.query.filter_by(
@@ -222,12 +286,14 @@ def teacher_dashboard():
                 course_number=course.course_number,
                 semester=course.semester
             ).all()
+
             course_rosters[f"{course.course_prefix} {course.course_number}"] = students
 
         return render_template('teacher_dashboard.html',
                                courses=courses,
                                course_rosters=course_rosters,
                                teacher=teacher)
+
     return render_template('teacher_dashboard.html')
 
 
@@ -237,10 +303,14 @@ def update_grade():
     if current_user.user_type != 'teacher':
         return jsonify({'success': False, 'message': 'Unauthorized'})
 
-    student_id = request.form.get('student_id')
-    course_prefix = request.form.get('course_prefix')
-    course_number = request.form.get('course_number')
-    new_grade = request.form.get('grade')
+    data = request.get_json()
+    student_id = data.get('student_id')
+    course_prefix = data.get('course_prefix')
+    course_number = data.get('course_number')
+    new_grade = data.get('grade')
+
+    if new_grade not in ['A', 'B', 'C', 'D', 'F']:
+        return jsonify({'success': False, 'message': 'Invalid grade'})
 
     course = StudentCourse.query.filter_by(
         student_id=student_id,

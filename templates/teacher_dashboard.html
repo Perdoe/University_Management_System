@@ -1,3 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,277 +7,275 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #16a34a;
+            --warning-color: #ca8a04;
+            --danger-color: #dc2626;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: white;
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
             padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            text-align: center;
         }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            background: var(--card-background);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
         h1 {
-            color: #333;
+            color: var(--text-primary);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
+
+        h2 {
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
         .action-buttons {
             display: grid;
-            grid-template-rows: auto auto;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
         }
-        .action-button, .back-button {
-            display: inline-block;
-            background: #4CAF50;
+
+        .action-button {
+            background: var(--primary-color);
             color: white;
-            padding: 10px 20px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            text-decoration: none;
-            font-size: 16px;
-        }
-        .action-button:hover, .back-button:hover {
-            background: #45a049;
-        }
-        .back-button {
-            background: #f44336;
-            margin-top: 20px;
-        }
-        .back-button:hover {
-            background: #d32f2f;
-        }
-        #rosterDisplay, #scheduleDisplay, #gradeManagement, #courseSelection {
-            display: none;
-            margin-top: 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
             text-align: center;
-        }
-        .grade-row {
+            text-decoration: none;
             display: flex;
-            justify-content: space-between;
-            max-width: 400px;
-            margin: 10px auto;
-            font-size: 16px;
-            padding: 5px 0;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
         }
-        .course-name {
-            text-align: left;
-            flex-grow: 1;
+
+        .action-button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
         }
-        .grade-value {
-            text-align: right;
-            min-width: 50px;
+
+        .dashboard-view {
+            display: none;
+            background: var(--card-background);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
         }
-        .semester-header {
-            margin-top: 20px;
-            font-weight: bold;
-            color: #4CAF50;
-            text-align: left;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-        }
+
         .course-table {
             width: 100%;
-            max-width: 600px;
-            margin: 20px auto;
             border-collapse: collapse;
+            margin-top: 16px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
         }
-        .course-table th, .course-table td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
+
         .course-table th {
-            background-color: #4CAF50;
+            background: var(--primary-color);
             color: white;
+            padding: 16px;
+            text-align: left;
+            font-weight: 500;
         }
-        .course-table tr:nth-child(even) {
-            background-color: #f2f2f2;
+
+        .course-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
-        .edit-grade {
-            background: #2196F3;
+
+        .back-button {
+            background: var(--danger-color);
             color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            cursor: pointer;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 24px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
-        .edit-grade:hover {
-            background: #1976D2;
+
+        .back-button:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
         }
     </style>
-    <script>
-        function hideAllDisplays() {
-            document.getElementById('rosterDisplay').style.display = 'none';
-            document.getElementById('scheduleDisplay').style.display = 'none';
-            document.getElementById('gradeManagement').style.display = 'none';
-            document.getElementById('courseSelection').style.display = 'none';
-        }
-
-        function showRoster() {
-            hideAllDisplays();
-            const rosterDisplay = document.getElementById('rosterDisplay');
-            rosterDisplay.style.display = 'block';
-
-            // Show all course rosters when viewing full roster
-            const courseElements = document.querySelectorAll('[data-course]');
-            courseElements.forEach(element => {
-                element.style.display = 'block';
-            });
-        }
-
-        function showSchedule() {
-            hideAllDisplays();
-            document.getElementById('scheduleDisplay').style.display = 'block';
-        }
-
-        function showCourseSelection() {
-            hideAllDisplays();
-            document.getElementById('courseSelection').style.display = 'block';
-        }
-
-        function showGradeManagement(course) {
-            hideAllDisplays();
-            document.getElementById('rosterDisplay').style.display = 'block';
-
-            // Hide all course rosters first
-            const courseElements = document.querySelectorAll('[data-course]');
-            courseElements.forEach(element => {
-                element.style.display = 'none';
-            });
-
-            // Show only the selected course's roster
-            const selectedCourse = document.querySelector(`[data-course="${course}"]`);
-            if (selectedCourse) {
-                selectedCourse.style.display = 'block';
-            }
-        }
-
-        function editGrade(studentId, coursePrefix, courseNumber) {
-            const currentGrade = document.querySelector(`tr[data-student="${studentId}"] .grade-value`).textContent;
-            const newGrade = prompt("Enter new grade (A, B, C, D, or F):", currentGrade);
-
-            if (newGrade && ['A', 'B', 'C', 'D', 'F'].includes(newGrade.toUpperCase())) {
-                fetch('/update_grade', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `student_id=${studentId}&course_prefix=${coursePrefix}&course_number=${courseNumber}&grade=${newGrade.toUpperCase()}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update the grade in the table without reloading
-                        document.querySelector(`tr[data-student="${studentId}"] .grade-value`).textContent = newGrade.toUpperCase();
-                    } else {
-                        alert('Failed to update grade');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to update grade');
-                });
-            }
-        }
-    </script>
 </head>
 <body>
     <div class="container">
-        <h1>Teacher Dashboard</h1>
-        <h2>Welcome, {{ current_user.username }}</h2>
-
-        <div class="action-buttons">
-            <a href="#" class="action-button" onclick="showRoster()">View Class Roster</a>
-            <a href="#" class="action-button" onclick="showCourseSelection()">Manage Grades</a>
-            <a href="#" class="action-button">Create Assignments</a>
-            <a href="#" class="action-button">Schedule Office Hours</a>
-            <a href="#" class="action-button" onclick="showSchedule()">View Schedule</a>
-            <a href="#" class="action-button">Contact Department</a>
+        <div class="dashboard-header">
+            <h1>Teacher Dashboard</h1>
+            <h2>Welcome, {{ current_user.username }}</h2>
         </div>
 
-        <!-- Teaching Schedule Display -->
-        <div id="scheduleDisplay">
-            <h2>Teaching Schedule</h2>
+        <div class="action-buttons">
+            <button class="action-button" data-view="scheduleView">Current Schedule</button>
+            <button class="action-button" data-view="rosterView">View Roster</button>
+            <button class="action-button" data-view="academicView">Academic Overview</button>
+            <button class="action-button" data-view="viewSchedule">View Schedule</button>
+            <button class="action-button" data-view="manageGrades">Manage Grades</button>
+            <button class="action-button" data-view="contactDepartment">Contact Department</button>
+        </div>
+
+        <!-- Schedule View -->
+        <div id="scheduleView" class="dashboard-view">
+            <h3>Current Schedule</h3>
             <table class="course-table">
                 <thead>
                     <tr>
                         <th>Course</th>
-                        <th>Credits</th>
                         <th>Semester</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for course in courses %}
                     <tr>
                         <td>{{ course.course_prefix }} {{ course.course_number }}</td>
-                        <td>{{ course.credits }}</td>
                         <td>{{ course.semester }} {{ course.year_taught }}</td>
+                        <td>Active</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Course Selection for Grade Management -->
-        <div id="courseSelection">
-            <h2>Select Course to Manage Grades</h2>
-            <div class="action-buttons">
-                {% for course in courses %}
-                <a href="#" class="action-button" onclick="showGradeManagement('{{ course.course_prefix }} {{ course.course_number }}')">
-                    {{ course.course_prefix }} {{ course.course_number }}
-                </a>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Roster Display -->
-        <div id="rosterDisplay">
-            <h2>Class Rosters</h2>
+        <!-- Roster View -->
+        <div id="rosterView" class="dashboard-view">
+            <h3>Class Rosters</h3>
             {% for course_name, students in course_rosters.items() %}
-            <div data-course="{{ course_name }}">
-                <div class="semester-header">{{ course_name }}</div>
-                <table class="course-table">
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Grade</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students %}
-                        <tr data-student="{{ student.student_id }}">
-                            <td>{{ student.student_id }}</td>
-                            <td class="grade-value">{{ student.grade }}</td>
-                            <td>
-                                <button class="edit-grade" onclick="editGrade('{{ student.student_id }}', '{{ course_name.split()[0] }}', '{{ course_name.split()[1] }}')">
-                                    Edit Grade
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <div class="semester-header">{{ course_name }}</div>
+            <table class="course-table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Grade</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.grade or 'N/A' }}</td>
+                        <td>
+                            <button onclick="updateGrade('{{ student.student_id }}', '{{ course_name }}')"
+                                    class="action-button" style="padding: 8px 16px; font-size: 0.9em;">
+                                Update Grade
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% endfor %}
         </div>
 
         <a href="{{ url_for('signin') }}" class="back-button">Back to Sign In</a>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.action-button');
+            const views = document.querySelectorAll('.dashboard-view');
+
+            function showView(viewId) {
+                views.forEach(view => {
+                    view.style.display = 'none';
+                });
+                buttons.forEach(btn => btn.classList.remove('active'));
+
+                const selectedView = document.getElementById(viewId);
+                const selectedButton = document.querySelector(`[data-view="${viewId}"]`);
+
+                if (selectedView) {
+                    selectedView.style.display = 'block';
+                }
+                if (selectedButton) {
+                    selectedButton.classList.add('active');
+                }
+            }
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const viewId = this.getAttribute('data-view');
+                    showView(viewId);
+                });
+            });
+
+            async function updateGrade(studentId, courseName) {
+                const newGrade = prompt('Enter new grade (A, B, C, D, or F):');
+                if (!newGrade) return;
+
+                const [prefix, number] = courseName.split(' ');
+
+                try {
+                    const response = await fetch('/update_grade', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            student_id: studentId,
+                            course_prefix: prefix,
+                            course_number: number,
+                            grade: newGrade.toUpperCase()
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Grade updated successfully!');
+                        location.reload();
+                    } else {
+                        alert('Failed to update grade: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('Error updating grade: ' + error);
+                }
+            }
+        });
+    </script>
 </body>
 </html>
+{% endblock %}
