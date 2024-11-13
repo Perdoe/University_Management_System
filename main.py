@@ -278,7 +278,7 @@ def teacher_dashboard():
         # Get teacher's courses
         courses = InstructorCourse.query.filter_by(instructor_id=teacher.instructor_id).all()
 
-        # Get class rosters for each course
+        # Get class rosters for each course and sort them
         course_rosters = {}
         for course in courses:
             students = StudentCourse.query.filter_by(
@@ -287,7 +287,12 @@ def teacher_dashboard():
                 semester=course.semester
             ).all()
 
-            course_rosters[f"{course.course_prefix} {course.course_number}"] = students
+            # Sort students by ID numerically
+            sorted_students = sorted(students,
+                                     key=lambda x: int(x.student_id.replace('U', '')) if x.student_id.startswith(
+                                         'U') else float('inf'))
+
+            course_rosters[f"{course.course_prefix} {course.course_number}"] = sorted_students
 
         return render_template('teacher_dashboard.html',
                                courses=courses,
