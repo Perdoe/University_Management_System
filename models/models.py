@@ -5,6 +5,15 @@ from flask_login import UserMixin
 
 db = SQLAlchemy()
 
+class SystemLog(db.Model):
+    __tablename__ = 'system_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.String(20))
+    activity = db.Column(db.String(200))
+    details = db.Column(db.String(500))
+    status = db.Column(db.String(20))  # 'success', 'error', 'warning'
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -19,6 +28,17 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class Advisor(db.Model):
+    __tablename__ = 'advisors'
+    id = db.Column(db.Integer, primary_key=True)
+    advisor_id = db.Column(db.String(10), unique=True)
+    department_id = db.Column(db.String(10))
+    phone = db.Column(db.String(20))
+    office_location = db.Column(db.String(50))
+    office_hours = db.Column(db.String(200))
+    max_students = db.Column(db.Integer, default=50)
+    current_students = db.Column(db.Integer, default=0)
 
 class Teacher(db.Model):
     __tablename__ = 'teachers'
