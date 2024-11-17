@@ -3,7 +3,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from sqlalchemy import or_
 import logging
 import re
-from models.models import db, User, Teacher, Student, Staff, Department, InstructorCourse, StudentCourse
+from models.models import db, User, Advisor, Teacher, Student, Staff, Department, InstructorCourse, StudentCourse, SystemLog
 from config.config import Config
 
 app = Flask(__name__)
@@ -31,6 +31,8 @@ def determine_user_type(username):
         return 'teacher'
     elif username.startswith('ST') and username[2:].isdigit():
         return 'staff'
+    elif username.startswith('A') and username[1:].isdigit():
+        return 'advisor'
     return None
 
 
@@ -46,32 +48,42 @@ def index():
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
-    # Redirect if user is already logged in
-
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        # Find the user in the database
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
-            # Login the user
             login_user(user)
-            app.logger.info(f'User {username} logged in successfully')
 
-            # Redirect based on user type
+            # Add this logging call
+            log_activity(
+                user_id=username,
+                activity="User Login",
+                details=f"User {username} logged in successfully",
+                status='success'
+            )
+
             if user.user_type == 'student':
                 return redirect(url_for('student_dashboard'))
             elif user.user_type == 'teacher':
                 return redirect(url_for('teacher_dashboard'))
             elif user.user_type == 'staff':
                 return redirect(url_for('staff_dashboard'))
+            elif user.user_type == 'advisor':
+                return redirect(url_for('advisor_dashboard'))
         else:
+            # Add this logging call for failed attempts
+            log_activity(
+                user_id=username,
+                activity="Failed Login",
+                details=f"Failed login attempt for username {username}",
+                status='error'
+            )
             flash('Invalid username or password', 'error')
             return redirect(url_for('signin'))
 
-    # GET request - show the login form
     return render_template('signin.html')
 
 @app.route('/logout')
@@ -266,6 +278,102 @@ def debug_student_data(student_id):
     return jsonify({'student_found': False})
 
 
+@app.route('/api/student/update-profile', methods=['POST'])
+@login_required
+def update_student_profile():
+    if current_user.user_type != 'student':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    current_password = data.get('currentPassword')
+    new_password = data.get('newPassword')
+    new_email = data.get('email')
+
+    # Verify current password
+    if not current_user.check_password(current_password):
+        return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+    try:
+        if new_email:
+            # Check if email already exists for another user
+            existing_user = User.query.filter(
+                User.email == new_email,
+                User.id != current_user.id
+            ).first()
+            if existing_user:
+                return jsonify({'success': False, 'message': 'Email already in use'}), 400
+            current_user.email = new_email
+
+        if new_password:
+            current_user.set_password(new_password)
+
+        db.session.commit()
+
+        # Log the profile update
+        log_activity(
+            current_user.username,
+            "Profile Update",
+            f"Student {current_user.username} updated their profile",
+            "success"
+        )
+
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/teacher/update-profile', methods=['POST'])
+@login_required
+def update_teacher_profile():
+    print("Teacher profile update requested")  # Debug log
+    if current_user.user_type != 'teacher':
+        print(f"Unauthorized: user type is {current_user.user_type}")  # Debug log
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    try:
+        data = request.get_json()
+        print("Received data:", data)  # Debug log
+
+        current_password = data.get('currentPassword')
+        new_password = data.get('newPassword')
+        new_email = data.get('email')
+
+        # Verify current password
+        if not current_user.check_password(current_password):
+            return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+        if new_email:
+            # Check if email already exists for another user
+            existing_user = User.query.filter(
+                User.email == new_email,
+                User.id != current_user.id
+            ).first()
+            if existing_user:
+                return jsonify({'success': False, 'message': 'Email already in use'}), 400
+            current_user.email = new_email
+
+        if new_password:
+            current_user.set_password(new_password)
+
+        db.session.commit()
+
+        # Log the profile update
+        log_activity(
+            current_user.username,
+            "Profile Update",
+            f"Teacher {current_user.username} updated their profile",
+            "success"
+        )
+
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+
+    except Exception as e:
+        print(f"Error in profile update: {str(e)}")  # Debug log
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/teacher_dashboard')
 @login_required
 def teacher_dashboard():
@@ -324,8 +432,17 @@ def update_grade():
     ).first()
 
     if course:
+        old_grade = course.grade
         course.grade = new_grade
         db.session.commit()
+
+        # Log the grade change
+        log_activity(
+            current_user.username,
+            "Grade Update",
+            f"Changed grade for {student_id} in {course_prefix} {course_number} from {old_grade} to {new_grade}"
+        )
+
         return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Course not found'})
 
@@ -335,7 +452,203 @@ def update_grade():
 def staff_dashboard():
     if current_user.user_type != 'staff':
         return redirect(url_for('index'))
-    return render_template('staff_dashboard.html')
+
+    staff = Staff.query.filter_by(staff_id=current_user.username).first()
+    courses = InstructorCourse.query.all()
+    students = Student.query.all()
+
+    # Add some debug printing
+    system_logs = SystemLog.query.order_by(SystemLog.timestamp.desc()).limit(50).all()
+    print(f"Found {len(system_logs)} logs")  # Debug print
+    for log in system_logs:
+        print(f"Log: {log.timestamp} - {log.user_id} - {log.activity}")  # Debug print
+
+    department_stats = {
+        'total_courses': len(courses),
+        'total_faculty': len(Teacher.query.all()),
+        'active_students': len(students),
+        'available_seats': 1250
+    }
+
+    return render_template('staff_dashboard.html',
+                         current_user=current_user,
+                         staff=staff,
+                         courses=courses,
+                         students=students,
+                         department_stats=department_stats,
+                         system_logs=system_logs)
+
+
+@app.route('/update_student_major', methods=['POST'])
+@login_required
+def update_student_major():
+    if current_user.user_type != 'staff':
+        return jsonify({'success': False, 'message': 'Unauthorized'})
+
+    try:
+        data = request.get_json()
+        student_id = data.get('student_id')
+        new_major = data.get('new_major')
+
+        student = Student.query.filter_by(student_id=student_id).first()
+        if student:
+            student.major = new_major
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Student not found'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+# Add route for updating student major
+@app.route('/update_major', methods=['POST'])
+@login_required
+def update_major():
+    if current_user.user_type != 'staff':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    student_id = data.get('student_id')
+    new_major = data.get('major')
+
+    student = Student.query.filter_by(student_id=student_id).first()
+    if student:
+        student.major = new_major
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Student not found'})
+
+
+# Add route for assigning instructor
+@app.route('/assign_instructor', methods=['POST'])
+@login_required
+def assign_instructor():
+    if current_user.user_type != 'staff':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    course_prefix = data.get('course_prefix')
+    course_number = data.get('course_number')
+    instructor_id = data.get('instructor_id')
+
+    course = InstructorCourse.query.filter_by(
+        course_prefix=course_prefix,
+        course_number=course_number
+    ).first()
+
+    if course:
+        course.instructor_id = instructor_id
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Course not found'})
+
+
+@app.route('/api/staff/department_data')
+@login_required
+def get_department_data():
+    if current_user.user_type != 'staff':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        # Fetch actual data from your database
+        return jsonify({
+            'courseOfferings': {
+                'totalActiveCourses': 42,
+                'availableSeats': 1250
+            },
+            'faculty': {
+                'totalFaculty': 15,
+                'averageCourseLoad': 3.2
+            },
+            'requirements': {
+                'requiredCredits': 120,
+                'coreCourses': 45
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/staff/update-profile', methods=['POST'])
+@login_required
+def update_staff_profile():
+    if current_user.user_type != 'staff':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    current_password = data.get('currentPassword')
+    new_password = data.get('newPassword')
+    new_email = data.get('email')
+
+    # Verify current password
+    if not current_user.check_password(current_password):
+        return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+    try:
+        if new_email:
+            # Check if email already exists for another user
+            existing_user = User.query.filter(
+                User.email == new_email,
+                User.id != current_user.id
+            ).first()
+            if existing_user:
+                return jsonify({'success': False, 'message': 'Email already in use'}), 400
+            current_user.email = new_email
+
+        if new_password:
+            current_user.set_password(new_password)
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/staff/department-info')
+@login_required
+def get_department_info():
+    if current_user.user_type != 'staff':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        department = Department.query.first()
+        courses = InstructorCourse.query.all()
+        teachers = Teacher.query.all()
+
+        return jsonify({
+            'courseOfferings': {
+                'totalActiveCourses': len(courses),
+                'availableSeats': 1250  # This should be calculated based on your data
+            },
+            'faculty': {
+                'totalFaculty': len(teachers),
+                'averageCourseLoad': round(len(courses) / len(teachers), 1) if teachers else 0
+            },
+            'requirements': {
+                'requiredCredits': department.total_hours_req if department else 120,
+                'coreCourses': 45  # This should come from your data
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/staff/performance-data')
+@login_required
+def get_performance_data():
+    if current_user.user_type != 'staff':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        # This should be calculated from your actual data
+        performance_data = [
+            {'month': 'Jan', 'avgGPA': 3.2, 'enrollment': 450},
+            {'month': 'Feb', 'avgGPA': 3.3, 'enrollment': 448},
+            {'month': 'Mar', 'avgGPA': 3.1, 'enrollment': 445}
+        ]
+        return jsonify(performance_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/advisor_dashboard')
@@ -343,8 +656,97 @@ def staff_dashboard():
 def advisor_dashboard():
     if current_user.user_type != 'advisor':
         return redirect(url_for('index'))
-    return render_template('advisor_dashboard.html')
 
+    # Get advisor information
+    advisor = Advisor.query.filter_by(advisor_id=current_user.username).first()
+
+    # Get all students in the advisor's department
+    students = Student.query.filter_by(major=advisor.department_id).all()
+
+    # Get recent system logs for the advisor's students
+    student_ids = [student.student_id for student in students]
+    system_logs = SystemLog.query.filter(
+        SystemLog.user_id.in_(student_ids)
+    ).order_by(SystemLog.timestamp.desc()).limit(10).all()
+
+    return render_template('advisor_dashboard.html',
+                           advisor=advisor,
+                           students=students,
+                           system_logs=system_logs)
+
+
+@app.route('/api/advisor/students')
+@login_required
+def get_advisor_students():
+    if current_user.user_type != 'advisor':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    advisor = Advisor.query.filter_by(advisor_id=current_user.username).first()
+    students = Student.query.filter_by(major=advisor.department_id).all()
+
+    return jsonify({
+        'students': [{
+            'id': student.student_id,
+            'major': student.major,
+            'gender': student.gender
+        } for student in students]
+    })
+
+@app.route('/api/advisor/update-profile', methods=['POST'])
+@login_required
+def update_advisor_profile():
+    if current_user.user_type != 'advisor':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    current_password = data.get('currentPassword')
+    new_password = data.get('newPassword')
+    new_email = data.get('email')
+    new_phone = data.get('phone')
+    new_office_hours = data.get('officeHours')
+
+    # Verify current password
+    if not current_user.check_password(current_password):
+        return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+    try:
+        advisor = Advisor.query.filter_by(advisor_id=current_user.username).first()
+
+        if new_email:
+            existing_user = User.query.filter(
+                User.email == new_email,
+                User.id != current_user.id
+            ).first()
+            if existing_user:
+                return jsonify({'success': False, 'message': 'Email already in use'}), 400
+            current_user.email = new_email
+
+        if new_password:
+            current_user.set_password(new_password)
+
+        if new_phone:
+            advisor.phone = new_phone
+
+        if new_office_hours:
+            advisor.office_hours = new_office_hours
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+def log_activity(user_id, activity, details, status='success'):
+    """Add a new log entry"""
+    log = SystemLog(
+        user_id=user_id,
+        activity=activity,
+        details=details,
+        status=status
+    )
+    db.session.add(log)
+    db.session.commit()
 
 def init_db():
     with app.app_context():
