@@ -59,6 +59,13 @@
             font-weight: 500;
         }
 
+        h3 {
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
         .action-buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -90,6 +97,12 @@
             box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
         }
 
+        .action-button.active {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        }
+
         .dashboard-view {
             display: none;
             background: var(--card-background);
@@ -97,6 +110,10 @@
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             margin-bottom: 24px;
+        }
+
+        .dashboard-view.active {
+            display: block;
         }
 
         .course-table {
@@ -182,43 +199,9 @@
             transition: all 0.2s ease;
         }
 
-
         .back-button:hover {
             background: #b91c1c;
             transform: translateY(-2px);
-
-        .current-courses {
-            display: none;
-            margin-top: 20px;
-
-        }
-
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-top: 24px;
-        }
-
-        .schedule-day {
-            background: white;
-            padding: 16px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .schedule-day h4 {
-            color: var(--primary-color);
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .schedule-class {
-            padding: 8px;
-            background: #f1f5f9;
-            border-radius: 4px;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
         }
 
         .status-badge {
@@ -246,202 +229,36 @@
             .action-buttons {
                 grid-template-columns: 1fr;
             }
-
-        .dashboard-view {
-            display: none;  /* This is important */
+        }
+        /* Add these new styles */
+        .search-bar {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin: 4px 0 16px 0;
         }
 
-        .dashboard-view.active {
-            display: block;  /* This is important */
+        .form-group {
+            margin-bottom: 16px;
         }
 
-        .action-button {
-            background: var(--primary-color);
-            color: white;
-            padding: 16px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
+        .form-group h4 {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.2s ease;
-            text-align: center;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+            margin-bottom: 4px;
         }
 
-        .action-button.active {
-            background: var(--secondary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-
-        .action-button:hover {
-            background: var(--secondary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-
-
-    </style>
-    <script>
-        function showGPA() {
-            hideAllDisplays();
-
-            const gpaDisplay = document.getElementById('gpaDisplay');
-            gpaDisplay.style.display = 'block';
-
-            const grades = [
-                { course: "Calculus III", grade: 4 },
-                { course: "Computer Organization", grade: 3 },
-                { course: "Physics II", grade: 4 },
-                { course: "Music Theory", grade: 3 }
-            ];
-
-            const gpaDisplay = document.getElementById('gpaDisplay');
-            gpaDisplay.style.display = 'block';
-            gpaDisplay.innerHTML = ''; // Clear previous content
-
-            // Display each grade
-            grades.forEach(item => {
-                const row = document.createElement('div');
-                row.className = 'grade-row';
-                row.innerHTML = `
-                    <span class="course-name">${item.course}</span>
-                    <span class="grade-value">${item.grade}</span>
-                `;
-                gpaDisplay.appendChild(row);
-            });
-
-            // Calculate and display average
-            const average = grades.reduce((sum, item) => sum + item.grade, 0) / grades.length;
-            const totalDiv = document.createElement('div');
-            totalDiv.className = 'gpa-total';
-            totalDiv.innerHTML = `Semester GPA: ${average.toFixed(2)}`;
-            gpaDisplay.appendChild(totalDiv);
-
-        }
-
-        function showTranscript() {
-            hideAllDisplays();
-
-            const transcriptDisplay = document.getElementById('transcriptDisplay');
-            transcriptDisplay.style.display = 'block';
-        }
-
-        function showCurrentCourses() {
-            hideAllDisplays();
-            const currentCourses = document.getElementById('currentCourses');
-            currentCourses.style.display = 'block';
-
-            const transcript = {
-                'Senior Year - Spring 2024': [
-                    { course: "Software Engineering", grade: 4 },
-                    { course: "Computer Networks", grade: 3 },
-                    { course: "Technical Writing", grade: 4 },
-                    { course: "Web Development", grade: 4 },
-                    { course: "Ethics in Computing", grade: 3 }
-                ],
-                'Senior Year - Fall 2023': [
-                    { course: "Operating Systems", grade: 4 },
-                    { course: "Database Systems", grade: 4 },
-                    { course: "Artificial Intelligence", grade: 3 },
-                    { course: "Senior Project I", grade: 4 },
-                    { course: "Professional Development", grade: 4 }
-                ],
-                'Junior Year - Spring 2023': [
-                    { course: "Data Structures", grade: 3 },
-                    { course: "Computer Architecture", grade: 4 },
-                    { course: "Algorithm Analysis", grade: 3 },
-                    { course: "Programming Languages", grade: 4 },
-                    { course: "Digital Design", grade: 4 }
-                ],
-                'Junior Year - Fall 2022': [
-                    { course: "Calculus III", grade: 4 },
-                    { course: "Computer Organization", grade: 3 },
-                    { course: "Physics II", grade: 4 },
-                    { course: "Music Theory", grade: 3 },
-                    { course: "Discrete Mathematics", grade: 4 }
-                ],
-                'Sophomore Year - Spring 2022': [
-                    { course: "Calculus II", grade: 3 },
-                    { course: "Introduction to Programming", grade: 4 },
-                    { course: "Physics I", grade: 4 },
-                    { course: "English Composition", grade: 3 },
-                    { course: "Psychology 101", grade: 4 }
-                ]
-            };
-
-            const transcriptDisplay = document.getElementById('transcriptDisplay');
-            transcriptDisplay.style.display = 'block';
-            transcriptDisplay.innerHTML = ''; // Clear previous content
-
-            let totalGradePoints = 0;
-            let totalCourses = 0;
-
-            // Display each semester
-            for (const [semester, courses] of Object.entries(transcript)) {
-                // Add semester header
-                const semesterHeader = document.createElement('div');
-                semesterHeader.className = 'semester-header';
-                semesterHeader.textContent = semester;
-                transcriptDisplay.appendChild(semesterHeader);
-
-                // Display courses for this semester
-                courses.forEach(item => {
-                    const row = document.createElement('div');
-                    row.className = 'grade-row';
-                    row.innerHTML = `
-                        <span class="course-name">${item.course}</span>
-                        <span class="grade-value">${item.grade}</span>
-                    `;
-                    transcriptDisplay.appendChild(row);
-                    totalGradePoints += item.grade;
-                    totalCourses++;
-                });
-            }
-
-            // Calculate and display cumulative GPA
-            const cumulativeGPA = totalGradePoints / totalCourses;
-            const totalDiv = document.createElement('div');
-            totalDiv.className = 'gpa-total';
-            totalDiv.innerHTML = `Cumulative GPA: ${cumulativeGPA.toFixed(2)}`;
-            transcriptDisplay.appendChild(totalDiv);
-
-        }
-
-        function hideAllDisplays() {
-            document.getElementById('gpaDisplay').style.display = 'none';
-            document.getElementById('transcriptDisplay').style.display = 'none';
-
-            document.getElementById('currentCourses').style.display = 'none';
-        }
-
-        function calculateGPA(grades) {
-            const gradePoints = {
-                'A': 4.0,
-                'B': 3.0,
-                'C': 2.0,
-                'D': 1.0,
-                'F': 0.0
-            };
-            let totalPoints = 0;
-            let totalCourses = 0;
-
-            grades.forEach(grade => {
-                if (grade in gradePoints) {
-                    totalPoints += gradePoints[grade];
-                    totalCourses++;
-                }
-            });
-
-            return totalCourses > 0 ? (totalPoints / totalCourses).toFixed(2) : '0.00';
-
-
-        }
+        /* Fix the cancel button behavior */
     </style>
 </head>
 <body>
@@ -452,25 +269,49 @@
         </div>
 
         <div class="action-buttons">
-
             <button class="action-button active" data-view="currentCoursesView">Current Courses</button>
             <button class="action-button" data-view="academicOverviewView">Academic Overview</button>
             <button class="action-button" data-view="transcriptView">Transcript</button>
             <button class="action-button" data-view="scheduleView">View Schedule</button>
             <button class="action-button" data-view="semesterGpaView">Semester GPA</button>
             <button class="action-button" data-view="advisorView">Contact Advisor</button>
+            <button class="action-button" data-view="profileView">Profile Settings</button>
+        </div>
+        <!-- Profile View -->
+        <div id="profileView" class="dashboard-view">
+            <h3 class="view-title">Profile Management</h3>
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="form-group">
+                        <h4>Email Address</h4>
+                        <input type="email" id="email" class="search-bar" placeholder="Enter new email address">
+                    </div>
 
+                    <div class="form-group">
+                        <h4>Current Password</h4>
+                        <input type="password" id="currentPassword" class="search-bar" placeholder="Enter current password">
+                    </div>
 
-            <a href="#" class="action-button" onclick="showCurrentCourses()">Current Courses</a>
+                    <div class="form-group">
+                        <h4>New Password</h4>
+                        <input type="password" id="newPassword" class="search-bar" placeholder="Enter new password">
+                    </div>
 
-            <a href="#" class="action-button">Add/Drop Classes</a>
+                    <div class="form-group">
+                        <h4>Confirm New Password</h4>
+                        <input type="password" id="confirmPassword" class="search-bar" placeholder="Enter new password">
+                    </div>
 
-            <a href="#" class="action-button">Academic Overview</a>
-            <a href="#" class="action-button" onclick="showTranscript()">Transcript</a>
-            <a href="#" class="action-button">View Schedule</a>
-            <a href="#" class="action-button" onclick="showGPA()">Semester GPA</a>
-            <a href="#" class="action-button">Contact Advisor</a>
-
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button class="action-button" style="background: var(--text-secondary);" onclick="showView('currentCoursesView')">
+                            Cancel
+                        </button>
+                        <button class="action-button" onclick="updateProfile()">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Current Courses View -->
@@ -633,74 +474,103 @@
             {% endif %}
         </div>
 
-
-<!-- Advisor View -->
-<div id="advisorView" class="dashboard-view">
-    <h3>Contact Advisor</h3>
-    <div class="info-row">
-        <span class="info-label">Department</span>
-        <span class="info-value">{{ student.major if student else 'Not Specified' }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Advisor Phone</span>
-        <span class="info-value">{{ advisor_phone|default('Not Available') }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Advisor Email</span>
-        <span class="info-value">{{ advisor_email|default('Not Available') }}</span>
+        <!-- Advisor View -->
+        <div id="advisorView" class="dashboard-view">
+            <h3>Contact Advisor</h3>
+            <div class="info-row">
+                <span class="info-label">Department</span>
+                <span class="info-value">{{ student.major if student else 'Not Specified' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Advisor Phone</span>
+                <span class="info-value">{{ advisor_phone|default('Not Available') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Advisor Email</span>
+                <span class="info-value">{{ advisor_email|default('Not Available') }}</span>
+            </div>
+        </div>
 
         <a href="{{ url_for('signin') }}" class="back-button">Back to Sign In</a>
-
-        <div id="gpaDisplay"></div>
-        <div id="transcriptDisplay"></div>
-        <a href="/signin" class="back-button">Back to Sign In</a>
-
-
     </div>
-</div>
+    <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const buttons = document.querySelectorAll('.action-button');
+                const views = document.querySelectorAll('.dashboard-view');
 
-<a href="{{ url_for('signin') }}" class="back-button">Back to Sign In</a>
+                function showView(viewId) {
+                    views.forEach(view => {
+                        view.style.display = 'none';
+                        view.classList.remove('active');
+                    });
+                    buttons.forEach(btn => btn.classList.remove('active'));
 
-<!-- Put the script here, at the end of the body -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get all buttons and views
-        const buttons = document.querySelectorAll('.action-button');
-        const views = document.querySelectorAll('.dashboard-view');
+                    const selectedView = document.getElementById(viewId);
+                    const selectedButton = document.querySelector(`[data-view="${viewId}"]`);
 
-        // Function to show a specific view
-        function showView(viewId) {
-            // Hide all views and deactivate all buttons
-            views.forEach(view => {
-                view.classList.remove('active');
-                view.style.display = 'none';
+                    if (selectedView) {
+                        selectedView.style.display = 'block';
+                        selectedView.classList.add('active');
+                    }
+                    if (selectedButton) {
+                        selectedButton.classList.add('active');
+                    }
+                }
+
+                buttons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const viewId = this.getAttribute('data-view');
+                        showView(viewId);
+                    });
+                });
+
+                // Show Current Courses view by default
+                showView('currentCoursesView');
             });
-            buttons.forEach(btn => btn.classList.remove('active'));
+            async function updateProfile() {
+    const userType = 'student';
+    const email = document.getElementById('email').value;
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
 
-            // Show selected view and activate corresponding button
-            const selectedView = document.getElementById(viewId);
-            const selectedButton = document.querySelector(`[data-view="${viewId}"]`);
+    if (newPassword !== confirmPassword) {
+        alert('New passwords do not match');
+        return;
+    }
 
-            if (selectedView) {
-                selectedView.classList.add('active');
-                selectedView.style.display = 'block';
-            }
-            if (selectedButton) {
-                selectedButton.classList.add('active');
-            }
-        }
-
-        // Add click event listeners to all buttons
-        buttons.forEach(button => {
-            button.addEventListener('click', function() {
-                const viewId = this.getAttribute('data-view');
-                showView(viewId);
-            });
+    try {
+        const response = await fetch(`/api/${userType}/update-profile`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                currentPassword: currentPassword,
+                newPassword: newPassword
+            }),
         });
 
-        // Show Current Courses view by default
-        showView('currentCoursesView');
-    });
-</script>
-</body>
-</html>
+        if (response.ok) {
+            alert('Profile updated successfully');
+            // Clear the form
+            document.getElementById('email').value = '';
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            // Return to current courses view
+            showView('currentCoursesView');
+            return; // Add this to prevent further execution
+        } else {
+            const data = await response.json();
+            alert(data.message || 'Failed to update profile');
+        }
+    } catch (error) {
+        console.error('Profile update error:', error);
+        alert('An error occurred while updating profile');
+    }
+}
+        </script>
+    </body>
+    </html>
