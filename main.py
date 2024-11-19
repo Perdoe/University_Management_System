@@ -191,58 +191,43 @@ def student_dashboard():
     if current_user.user_type != 'student':
         return redirect(url_for('index'))
 
-    # Get student's information
-    # Remove the .first() to see if we get any results at all
     student = Student.query.filter_by(student_id=current_user.username.replace('S', '')).first()
 
     if student:
-        # Add debug print
-        print(f"Found student: {student.student_id}")
-
-        # Get all courses for this student
         courses = StudentCourse.query.filter_by(student_id=student.student_id).all()
-
-        # Debug print courses
-        print(f"Found {len(courses)} courses for student")
-        for course in courses:
-            print(
-                f"Course: {course.course_prefix} {course.course_number} - {course.semester} {course.year_taken} - Grade: {course.grade}")
 
         # Calculate GPAs and credits
         grade_points = {'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0}
         current_year = '2024'
         current_semester = 'S'
 
-        # Separate current courses
-        current_courses = [
-            course for course in courses
-            if course.year_taken == current_year and course.semester == current_semester
-        ]
+        current_courses = [course for course in courses
+                           if course.year_taken == current_year and course.semester == current_semester]
 
-        # Calculate semester GPA
         semester_points = sum(grade_points.get(c.grade, 0) for c in current_courses if c.grade in grade_points)
         semester_count = sum(1 for c in current_courses if c.grade in grade_points)
         semester_gpa = round(semester_points / max(semester_count, 1), 2)
 
-        # Calculate cumulative GPA
         total_points = sum(grade_points.get(c.grade, 0) for c in courses if c.grade in grade_points)
         total_count = sum(1 for c in courses if c.grade in grade_points)
         cumulative_gpa = round(total_points / max(total_count, 1), 2)
 
-        # Calculate credits
-        completed_credits = sum(3 for c in courses if c.grade in grade_points)  # Assuming 3 credits per course
+        completed_credits = sum(3 for c in courses if c.grade in grade_points)
         current_credits = sum(3 for c in current_courses if c.grade == 'IP')
 
         # Get department and advisor info
-        department = Department.query.filter_by(department_id=student.major).first()
-        advisor_phone = department.advisor_phone if department else 'Not Available'
-        advisor_email = f"{department.advisor_id}@university.edu" if department else 'Not Available'
+        department = Department.query.filter(
+            Department.major_offered.like(f"%{student.major}%")
+        ).first()
 
-        # Debug print final data
-        print(f"Semester GPA: {semester_gpa}")
-        print(f"Cumulative GPA: {cumulative_gpa}")
-        print(f"Completed Credits: {completed_credits}")
-        print(f"Current Credits: {current_credits}")
+        if department:
+            office_location = f"{department.building} {department.office}"
+            advisor_phone = department.advisor_phone
+            advisor_email = f"{department.advisor_id}@university.edu"
+        else:
+            office_location = 'Not Available'
+            advisor_phone = 'Not Available'
+            advisor_email = 'Not Available'
 
         return render_template('student_dashboard.html',
                                current_user=current_user,
@@ -252,10 +237,10 @@ def student_dashboard():
                                completed_credits=completed_credits,
                                current_credits=current_credits,
                                student=student,
+                               office_location=office_location,
                                advisor_phone=advisor_phone,
                                advisor_email=advisor_email)
-    else:
-        print(f"No student found for username: {current_user.username}")
+
     return render_template('student_dashboard.html', current_user=current_user)
 
 # Add the debug route here
@@ -657,22 +642,98 @@ def advisor_dashboard():
     if current_user.user_type != 'advisor':
         return redirect(url_for('index'))
 
-    # Get advisor information
-    advisor = Advisor.query.filter_by(advisor_id=current_user.username).first()
+    departments = Department.query.filter_by(advisor_id=current_user.username).all()
 
-    # Get all students in the advisor's department
-    students = Student.query.filter_by(major=advisor.department_id).all()
+    if departments:
+        all_majors = []
+        for dept in departments:
+            majors = dept.major_offered.split(',')
+            all_majors.extend([m.strip() for m in majors])
 
-    # Get recent system logs for the advisor's students
-    student_ids = [student.student_id for student in students]
-    system_logs = SystemLog.query.filter(
-        SystemLog.user_id.in_(student_ids)
-    ).order_by(SystemLog.timestamp.desc()).limit(10).all()
+        # Get students with their courses
+        students_data = []
+        students = Student.query.filter(Student.major.in_(all_majors)).all()
+
+        for student in students:
+            courses = StudentCourse.query.filter_by(student_id=student.student_id).all()
+
+            # Calculate GPA
+            grade_points = {'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0}
+            total_points = sum(grade_points.get(c.grade, 0) for c in courses if c.grade in grade_points)
+            completed_courses = sum(1 for c in courses if c.grade in grade_points)
+            gpa = round(total_points / completed_courses, 2) if completed_courses > 0 else 0.00
+
+            # Calculate completed credits (assuming 3 credits per course)
+            credits = completed_courses * 3
+
+            students_data.append({
+                'student_id': student.student_id,
+                'major': student.major,
+                'gpa': gpa,
+                'credits_completed': credits
+            })
+
+    else:
+        students_data = []
+
+    # Rest of the code remains the same
+    appointments = {'today': 0, 'week': 0, 'pending': 0}
+    appointments_list = []
+    degree_plans = {'active': 0, 'pending': 0, 'graduating': 0}
+    registrations = []
 
     return render_template('advisor_dashboard.html',
-                           advisor=advisor,
-                           students=students,
-                           system_logs=system_logs)
+                           current_user=current_user,
+                           departments=departments,
+                           students=students_data,
+                           appointments=appointments,
+                           appointments_list=appointments_list,
+                           degree_plans=degree_plans,
+                           registrations=registrations)
+
+
+@app.route('/api/advisor/update-profile', methods=['POST'])
+@login_required
+def update_advisor_profile():
+    if current_user.user_type != 'advisor':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    current_password = data.get('currentPassword')
+    new_password = data.get('newPassword')
+    new_email = data.get('email')
+
+    if not current_user.check_password(current_password):
+        return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
+
+    try:
+        if new_email:
+            existing_user = User.query.filter(
+                User.email == new_email,
+                User.id != current_user.id
+            ).first()
+            if existing_user:
+                return jsonify({'success': False, 'message': 'Email already in use'}), 400
+            current_user.email = new_email
+
+        if new_password:
+            current_user.set_password(new_password)
+
+        db.session.commit()
+
+        # Log the profile update
+        log_activity(
+            current_user.username,
+            "Profile Update",
+            f"Advisor {current_user.username} updated their profile",
+            "success"
+        )
+
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @app.route('/api/advisor/students')
@@ -691,51 +752,6 @@ def get_advisor_students():
             'gender': student.gender
         } for student in students]
     })
-
-@app.route('/api/advisor/update-profile', methods=['POST'])
-@login_required
-def update_advisor_profile():
-    if current_user.user_type != 'advisor':
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-
-    data = request.get_json()
-    current_password = data.get('currentPassword')
-    new_password = data.get('newPassword')
-    new_email = data.get('email')
-    new_phone = data.get('phone')
-    new_office_hours = data.get('officeHours')
-
-    # Verify current password
-    if not current_user.check_password(current_password):
-        return jsonify({'success': False, 'message': 'Current password is incorrect'}), 400
-
-    try:
-        advisor = Advisor.query.filter_by(advisor_id=current_user.username).first()
-
-        if new_email:
-            existing_user = User.query.filter(
-                User.email == new_email,
-                User.id != current_user.id
-            ).first()
-            if existing_user:
-                return jsonify({'success': False, 'message': 'Email already in use'}), 400
-            current_user.email = new_email
-
-        if new_password:
-            current_user.set_password(new_password)
-
-        if new_phone:
-            advisor.phone = new_phone
-
-        if new_office_hours:
-            advisor.office_hours = new_office_hours
-
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Profile updated successfully'})
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
 
 def log_activity(user_id, activity, details, status='success'):
     """Add a new log entry"""
