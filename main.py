@@ -5,7 +5,7 @@ import logging
 import re
 from models.models import db, User, Advisor, Teacher, Student, Staff, Department, InstructorCourse, StudentCourse, SystemLog
 from config.config import Config
-
+from RAG_Database import AcademicRAG
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -393,6 +393,34 @@ def teacher_dashboard():
                                teacher=teacher)
 
     return render_template('teacher_dashboard.html')
+
+rag = AcademicRAG()
+
+
+@app.route('/ai')
+@login_required
+def ai_page():
+    # Restrict access to only teachers and advisors
+    if current_user.user_type not in ['teacher', 'advisor']:
+        return redirect(url_for('index'))
+    return render_template('ai.html', current_user=current_user)
+
+@app.route('/query', methods=['POST'])
+@login_required
+def query_rag():
+    if current_user.user_type not in ['teacher', 'advisor']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    user_query = data.get('question')
+
+    if not user_query:
+        return jsonify({'success': False, 'message': 'No question provided'}), 400
+
+    # Use AcademicRAG to process the query
+    response = rag.process_query(user_query)
+
+    return jsonify(response)
 
 
 @app.route('/update_grade', methods=['POST'])
